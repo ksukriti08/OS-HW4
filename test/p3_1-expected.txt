@@ -1,0 +1,51 @@
+Instruction? Put page table for PID 0 into physical frame 0.
+Mapped virtual address 0 (page 0) into physical frame 1.
+Instruction? Error: Virtual page already mapped into physical frame 1.
+Instruction? Mapped virtual address 16 (page 1) into physical frame 2.
+Instruction? Mapped virtual address 32 (page 2) into physical frame 3.
+Instruction? Error: virtual address 35 does not have write permissions.
+Instruction? Stored value 255 at virtual address 19 (physical address 35)
+Instruction? The value 255 was found at virtual address 19.
+Instruction? Swapped Frame 1 to disk at offset 0.
+Put page table for PID 1 into physical frame 1.
+Swapped Frame 2 to disk at offset 16.
+Mapped virtual address 19 (page 1) into physical frame 2.
+Instruction? Swapped Frame 3 to disk at offset 32.
+Mapped virtual address 5 (page 0) into physical frame 3.
+Instruction? Swapped Frame 0 to disk at offset 48.
+Put page table for PID 2 into physical frame 0.
+Swapped Frame 1 to disk at offset 64.
+Mapped virtual address 63 (page 3) into physical frame 1.
+Instruction? Swapped Frame 2 to disk at offset 80.
+Swapped disk offset 64 into Frame 2.
+Stored value 158 at virtual address 5 (physical address 53)
+Instruction? The value 158 was found at virtual address 5.
+Instruction? Swapped Frame 3 to disk at offset 96.
+Swapped disk offset 48 into Frame 3.
+Swapped Frame 0 to disk at offset 112.
+The value 255 was found at virtual address 19.
+Instruction? Swapped Frame 1 to disk at offset 128.
+Swapped disk offset 112 into Frame 1.
+Swapped Frame 2 to disk at offset 144.
+Stored value 1 at virtual address 48 (physical address 32)
+Instruction? Swapped Frame 3 to disk at offset 160.
+Put page table for PID 3 into physical frame 3.
+Swapped Frame 0 to disk at offset 176.
+Swapped Frame 1 to disk at offset 192.
+Swapped disk offset 160 into Frame 1.
+Mapped virtual address 32 (page 2) into physical frame 0.
+Instruction? Swapped Frame 2 to disk at offset 208.
+Swapped disk offset 144 into Frame 2.
+Swapped Frame 3 to disk at offset 224.
+Swapped disk offset 192 into Frame 3.
+Swapped Frame 0 to disk at offset 240.
+Swapped Frame 1 to disk at offset 256.
+Swapped disk offset 224 into Frame 1.
+Stored value 15 at virtual address 7 (physical address 7)
+Instruction? Swapped Frame 2 to disk at offset 272.
+Stored value 206 at virtual address 40 (physical address 40)
+Instruction? Swapped Frame 3 to disk at offset 288.
+Swapped disk offset 272 into Frame 3.
+The value 15 was found at virtual address 7.
+Instruction? The value 206 was found at virtual address 40.
+Instruction? End of File.

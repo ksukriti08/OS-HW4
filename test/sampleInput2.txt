@@ -1,0 +1,9 @@
+0,map,0,0
+0,load,16,NA
+0,load,14,5
+0,map,10,0
+0,store,48,23
+0,store,15,255
+9,something,78,3
+0,map,16,1
+0,store,16,256
