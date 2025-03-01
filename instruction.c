@@ -18,16 +18,16 @@ int Instruction_Map(int pid, int va, int value_in){
 	int* physmem = Memsim_GetPhysMem();
 
 	if (value_in != 0 && value_in != 1) { //check for a valid value (instructions validate the value_in)
-		printf("Invalid value for map instruction. Value must be 0 or 1.\n");
+		printf("Invalid value for map instruction. Value must be 0 or 1.\n\n");
 		return 1;
 	}
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && PT_PIDHasWritePerm(pid, VPN(va))) {
-		printf("Error: Virtual page already mapped into physical frame %d.\n", frame);
+		printf("Error: Virtual page already mapped into physical frame %d.\n\n", frame);
 		return 1;
 	} 
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && !PT_PIDHasWritePerm(pid, VPN(va))) {
 	    PT_UpdateProtection(pid, VPN(va));
-		printf("Tried to updated PTE\n");
+		printf("Tried to updated PTE\n\n");
 		return 1;
 	} 
 	//todo
@@ -36,6 +36,7 @@ int Instruction_Map(int pid, int va, int value_in){
 	// If no empty page was found, we must evict a page to make room
     if(free_page == -1){
 		PT_Evict();
+		free_page = Memsim_FirstFreePFN();
 		// printf("Error, no free pages\n");
 		// return 0;
 	}
@@ -44,15 +45,17 @@ int Instruction_Map(int pid, int va, int value_in){
 	if(!PT_PageTableExists(pid)){
 		// Init the Page table  
 		int next_free_page = PT_PageTableInit(pid, free_page);
-		printf("Next free page: %d \n", next_free_page);
+		if(next_free_page == -1){
+			PT_Evict();
+			next_free_page = Memsim_FirstFreePFN();
+		}
 		printf("Put page table for PID %d into physical frame %d.\n", pid, PFN(free_page));
 		PT_SetPTE(pid, VPN(va), PFN(next_free_page), 1, value_in, 1, 1);
-		printf("Mapped virtual address %d (page %d) into physical frame %d.\n", va, VPN(va), PFN(next_free_page));
-	
+		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(next_free_page));
 	}
     else{
 		PT_SetPTE(pid, VPN(va), PFN(free_page), 1, value_in, 1, 1);
-		printf("Mapped virtual address %d (page %d) into physical frame %d.\n", va, VPN(va), PFN(free_page));
+		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(free_page));
 
 	}
 	// Set the PTE with vals
@@ -77,12 +80,17 @@ int Instruction_Store(int pid, int va, int value_in){
 		return 1;
 	}	
 
+	if(!PT_CheckPresent(pid, VPN(va))){
+		PT_Evict(); // should check if a frame is free first
+		PT_BringFromDisk(pid, VPN(va));
+		return 1;
+	}
 	int offset = va % PAGE_SIZE;
 	pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 	
 	// Translate the virtual address into its physical address for the process
 	physmem[pa] = value_in;
-	printf("Stored value %u at virtual address %d (physical address %d)\n", value_in, va, pa);
+	printf("Stored value %u at virtual address %d (physical address %d)\n\n", value_in, va, pa);
 	// Finally stores the value in the physical memory address, mapped from the virtual address
 	// Hint, modify a byte in physmem using a pa and value_in
 
@@ -100,11 +108,11 @@ int Instruction_Load(int pid, int va){
 	int* physmem = Memsim_GetPhysMem(); 
 
 	if (va < 0 || va > VIRTUAL_SIZE) { //check for a valid value (instructions validate the value_in)
-		printf("Error: The virtual address %d is not valid.\n", va);
+		printf("Error: The virtual address %d is not valid.\n\n", va);
 		return 1;
 	}
 	int offset = va % PAGE_SIZE;
 	pa = PT_VPNtoPA(pid, VPN(va)) + offset;
-    printf("The value at virtual address %d is %d\n", va, physmem[pa]);
+    printf("The value at virtual address %d is %d\n\n", va, physmem[pa]);
 	return 0;
 }

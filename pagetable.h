@@ -21,4 +21,7 @@ void PT_UpdateProtection(int process_id, int VPN);
 void PT_SetNotPresent(int process_id, int VPN);
 int PT_UpdatePTE(int frame, int diskOffset);
 void PT_UpdatePhysicalAddress(int process_id, int VPN, int pageAddress);
-void PT_SWAP();
+int PT_CheckPTEvicted(int frameNum);
+void PT_BringFromDisk(int pid, int address);
+void PT_SetPresent(int pid, int VPN);
+int PT_CheckPresent(int pid, int VPN);

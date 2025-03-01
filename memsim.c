@@ -63,6 +63,6 @@ int Memsim_FirstFreePFN(){
 int UpdateFreePages(int frameNum){
     freePages[frameNum] = 0;
     for(int i = 0; i < NUM_PAGES; i++){
-        printf("Frame: %d, Free: %d\n", i,freePages[i]);
+        // printf("Frame: %d, Free: %d\n", i,freePages[i]);
         }
 }
