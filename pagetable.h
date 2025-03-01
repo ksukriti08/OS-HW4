@@ -17,4 +17,6 @@ int PT_Evict();
 int PT_VPNtoPA(int process_id, int VPN);
 int PT_PIDHasWritePerm(int process_id, int VPN);
 void PT_Init();
-void PT_UpdatePTE(int process_id, int VPN, int newVal);
+void PT_UpdatePTE(int process_id, int VPN, int newVal, int protection);
+int PT_UpdateFrame(int frame);
+void PT_SWAP();

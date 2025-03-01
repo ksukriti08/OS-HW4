@@ -26,7 +26,7 @@ int Instruction_Map(int pid, int va, int value_in){
 		return 1;
 	} 
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && !PT_PIDHasWritePerm(pid, VPN(va))) {
-	    PT_UpdatePTE(pid, VPN(va), value_in);
+	    PT_UpdatePTE(pid, VPN(va), value_in, 1);
 		printf("Tried to updated PTE\n");
 		return 1;
 	} 
@@ -35,6 +35,7 @@ int Instruction_Map(int pid, int va, int value_in){
     int free_page = Memsim_FirstFreePFN();
 	// If no empty page was found, we must evict a page to make room
     if(free_page == -1){
+		PT_Evict();
 		printf("Error, no free pages\n");
 		return 0;
 	}
@@ -74,6 +75,11 @@ int Instruction_Store(int pid, int va, int value_in){
 		printf("Error: virtual address %d does not have write permissions.\n", va);
 		return 1;
 	}
+
+	if(va >= VIRTUAL_SIZE || va < 0){
+		printf("Invalid virtual address \n");
+	}
+	
 
 	// Translate the virtual address into its physical address for the process
 	pa = PT_VPNtoPA(pid, VPN(va)) + va;
