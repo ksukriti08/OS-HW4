@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
-
+#include <stdio.h>
 #include "memsim.h"
 
 /* Private Internals: */
@@ -56,4 +56,13 @@ int Memsim_FirstFreePFN(){
         }
     }
 	return -1;
+}
+
+/* Marks given page as free */
+
+int UpdateFreePages(int frameNum){
+    freePages[frameNum] = 0;
+    for(int i = 0; i < NUM_PAGES; i++){
+        printf("Frame: %d, Free: %d\n", i,freePages[i]);
+        }
 }

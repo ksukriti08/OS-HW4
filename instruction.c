@@ -26,7 +26,7 @@ int Instruction_Map(int pid, int va, int value_in){
 		return 1;
 	} 
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && !PT_PIDHasWritePerm(pid, VPN(va))) {
-	    PT_UpdatePTE(pid, VPN(va), value_in, 1);
+	    PT_UpdateProtection(pid, VPN(va));
 		printf("Tried to updated PTE\n");
 		return 1;
 	} 
@@ -36,14 +36,15 @@ int Instruction_Map(int pid, int va, int value_in){
 	// If no empty page was found, we must evict a page to make room
     if(free_page == -1){
 		PT_Evict();
-		printf("Error, no free pages\n");
-		return 0;
+		// printf("Error, no free pages\n");
+		// return 0;
 	}
 	// If there isn't already a page table, create one using the page found, and find a new page
 
 	if(!PT_PageTableExists(pid)){
 		// Init the Page table  
 		int next_free_page = PT_PageTableInit(pid, free_page);
+		printf("Next free page: %d \n", next_free_page);
 		printf("Put page table for PID %d into physical frame %d.\n", pid, PFN(free_page));
 		PT_SetPTE(pid, VPN(va), PFN(next_free_page), 1, value_in, 1, 1);
 		printf("Mapped virtual address %d (page %d) into physical frame %d.\n", va, VPN(va), PFN(next_free_page));
@@ -74,15 +75,12 @@ int Instruction_Store(int pid, int va, int value_in){
 	if (!PT_PIDHasWritePerm(pid, VPN(va))) { //check if memory is writable
 		printf("Error: virtual address %d does not have write permissions.\n", va);
 		return 1;
-	}
+	}	
 
-	if(va >= VIRTUAL_SIZE || va < 0){
-		printf("Invalid virtual address \n");
-	}
+	int offset = va % PAGE_SIZE;
+	pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 	
-
 	// Translate the virtual address into its physical address for the process
-	pa = PT_VPNtoPA(pid, VPN(va)) + va;
 	physmem[pa] = value_in;
 	printf("Stored value %u at virtual address %d (physical address %d)\n", value_in, va, pa);
 	// Finally stores the value in the physical memory address, mapped from the virtual address
@@ -105,7 +103,8 @@ int Instruction_Load(int pid, int va){
 		printf("Error: The virtual address %d is not valid.\n", va);
 		return 1;
 	}
-	pa = PT_VPNtoPA(pid, VPN(va)) + va;
+	int offset = va % PAGE_SIZE;
+	pa = PT_VPNtoPA(pid, VPN(va)) + offset;
     printf("The value at virtual address %d is %d\n", va, physmem[pa]);
 	return 0;
 }

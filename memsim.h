@@ -31,5 +31,5 @@
 void Memsim_Init();
 int* Memsim_GetPhysMem();
 int Memsim_FirstFreePFN();
-
+int UpdateFreePages(int frameNum);
 #endif // MEMSIM_H
