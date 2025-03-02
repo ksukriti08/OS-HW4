@@ -22,6 +22,7 @@ void PT_SetNotPresent(int process_id, int VPN);
 int PT_UpdatePTE(int frame, int diskOffset);
 void PT_UpdatePhysicalAddress(int process_id, int VPN, int pageAddress);
 int PT_CheckPTEvicted(int frameNum);
-void PT_BringFromDisk(int pid, int address);
+void PT_BringFromDisk(int pid, int address, int frame);
+int PT_PageTableInMem(int pid);
 void PT_SetPresent(int pid, int VPN);
 int PT_CheckPresent(int pid, int VPN);

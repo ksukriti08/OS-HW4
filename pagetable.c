@@ -62,6 +62,7 @@ void PT_SetPTE(int pid, int VPN, int PFN, int valid, int protection, int present
 	physmem[curr_index + (VPN*3) + 1] = VPN;
 	printf("Set VPN %d for PID %d at physical memory: %d\n", physmem[curr_index + (VPN*3)+1], pid, curr_index + (VPN*3)+ 1);
 	physmem[curr_index + (VPN*3) + 2] = PFN;
+	printf("PFN: %d\n", PFN);
 }
 
 /* Updates protection bit to 1 of virtual page */
@@ -121,7 +122,7 @@ void PT_SetPresent(int pid, int VPN){
 				uint8_t bits = physmem[ptStartPA+i-1];
 				bits|=(1<<2);
 				physmem[ptStartPA+i-1] = bits;
-				printf("Present bit for virtual page %d for pid %d updated to: %d\n",VPN, pid, bits>>2 & 1);
+				// printf("Present bit for virtual page %d for pid %d updated to: %d\n",VPN, pid, bits>>2 & 1);
 				return;
 			}
 			if(loc == 2){
@@ -168,8 +169,8 @@ void PT_UpdatePhysicalAddress(int pid, int VPN, int PA){
 	int loc = 0;
 		for(int i = 0; i<PAGE_SIZE; i++){
 			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
-				physmem[ptStartPA+i+1] = PA;
-				printf("Physical address for virtual page %d for pid %d updated to offset %d on disk \n",VPN, pid, PA);
+				physmem[ptStartPA+i+1] = PA/PAGE_SIZE;
+				// printf("Physical address for virtual page %d for pid %d updated to %d \n",VPN, pid, PA);
 				return;
 			}
 			if(loc == 2){
@@ -220,6 +221,19 @@ int PT_PageTableInit(int pid, int pa){
 		return 1;
 	}
  }
+
+ /* 
+ * Check the ptRegVars to see if Page table is in memory.
+ */
+int PT_PageTableInMem(int pid){
+	if(ptRegVals[pid].present == 0){
+		return 0;
+	}
+	else{
+		return 1;
+	}
+ }
+
 
 /* 
  * Returns the starting physical address of the page table for the given PID.
@@ -278,12 +292,12 @@ int PT_Evict() {
 	PT_UpdatePTE(frametoEvict, swapSlot); 
 	PT_CheckPTEvicted(frametoEvict);
 	FILE* file = fopen("disk.txt","r");
-	while (fscanf(file, "%d", &val) == 1) {
-        // printf("Value: %d\n", val);
-    }
+	// while (fscanf(file, "%d", &val) == 1) {
+    //     // printf("Value: %d\n", val);
+    // }
 	frametoEvict++; 
 	swapSlot = swapSlot+PAGE_SIZE;
-	return 0;
+	return frametoEvict-1;
 }
 
 /* Checks if a page table was evicted. If yes, updates its status*/
@@ -328,19 +342,28 @@ int PT_UpdatePTE(int frame, int diskOffset){
 
 // need to check if present = 0 before this 
 
-/* Searches disk for approproate page and loads it into physical memory */
-void PT_BringFromDisk(int pid, int VPN){
+/* Searches disk for appropriate page and loads it into physical memory */
+
+void PT_BringFromDisk(int pid, int VPN, int frameNum){
 	int* physmem = Memsim_GetPhysMem();
 	int val = 0;
 	int disk_pa = PT_VPNtoPA(pid, VPN);
 	FILE* file = fopen("disk.txt","r");
-	int count = 0;
+	int start = 0;
+	int end = disk_pa + PAGE_SIZE;
+	int offset = 0;
 	while (fscanf(file, "%d", &val) == 1) {
-		if(disk_pa == count){
-			// printf("Value: %d\n", val);
-			physmem[count] = val; // loads disk content into physical memory
+		if(disk_pa >= start && disk_pa < end){
+			printf("Value: %d\n", val);
+			physmem[frameNum*PAGE_SIZE+offset] = val; // loads disk content into physical memory
+			printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
 			PT_SetPresent(pid, VPN); // sets present bit of VPN now in memory to 1
+			PT_UpdatePhysicalAddress(pid, VPN, frameNum*PAGE_SIZE);
+			disk_pa++;
+			offset++;
+			// printf("Physical address of page %d for pid %d updated to %d \n", VPN, pid, frameNum*PAGE_SIZE);
 		}
+		start++;
     }
     printf("VPN %d for pid %d brought from disk at disk offset %d \n", VPN, pid, disk_pa);
 }
@@ -359,6 +382,7 @@ void PT_BringFromDisk(int pid, int VPN){
 int PT_VPNtoPA(int pid, int VPN){
 	int* physmem = Memsim_GetPhysMem();
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
+	printf("Starting physical address for page table %d: %d\n", pid, ptStartPA);
 	if(ptStartPA == -1){
 		return -1;
 	}
@@ -418,3 +442,5 @@ void PT_Init() {
 	// printf("Initiliazed all pages addresses to -1 and not present\n");
 }
 
+// need to brign page table into memory!
+// need to figure out if you can map to same von for same pid while swappign page tables (should nto be able to do this)
