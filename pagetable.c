@@ -100,7 +100,7 @@ void PT_SetNotPresent(int pid, int VPN){
 				uint8_t bits = physmem[ptStartPA+i-1];
 				bits&=~(1<<2);
 				physmem[ptStartPA+i-1] = bits;
-				// printf("Present bit for virtual page %d for pid %d updated to: %d\n",VPN, pid, bits>>2 & 1);
+				printf("Present bit for virtual page %d for pid %d updated to: %d\n",VPN, pid, bits>>2 & 1);
 				return;
 			}
 			if(loc == 2){
@@ -146,7 +146,7 @@ int PT_CheckPresent(int pid, int VPN){
 			// printf("Protection bit: %d\n",entrybits>>1 & 1);
 			if((entrybits>>2 & 1)==1){
 				loc = 0;
-				printf("VPN %d for pid %d IS present in physical memory\n", pid, VPN);
+				printf("VPN %d for pid %d IS present in physical memory\n", VPN, pid);
 				return TRUE;
 			}
 		}
@@ -155,7 +155,7 @@ int PT_CheckPresent(int pid, int VPN){
 		}
 		loc++;
 	}
-	printf("VPN %d for pid %d IS NOT present in physical memory\n", pid, VPN);
+	printf("VPN %d for pid %d IS NOT present in physical memory\n", VPN, pid);
 	return FALSE;
 }
 
@@ -190,14 +190,16 @@ int PT_PageTableInit(int pid, int pa){
 	int* physmem = Memsim_GetPhysMem();
 	// zero out the page we are about to use for the page table 
     for(int i = 0; i < PAGE_SIZE; i++){
-		physmem[pa+i] = 0;
+		physmem[pa+i] = -1;
 	}
 	// set the page table's root pointer register value
     ptRegVals[pid].ptStartPA = pa;
 	ptRegVals[pid].present = 1;
 	// return the PA of the next free page
 	pa = Memsim_FirstFreePFN();
-	printf("Free frame found: %d at address %d \n", pa/PAGE_SIZE, pa);
+	if(pa!=-1){
+		printf("Free frame found: %d at address %d \n", pa/PAGE_SIZE, pa);
+	}
 	// If there were no free pages,
 	// Evict one and use the new space
 	if(pa == -1){
@@ -280,17 +282,22 @@ int PT_Evict() {
 	FILE* swapFileHandle = fopen("disk.txt","a");
 	for(int i = 0; i < PAGE_SIZE; i++){
 		fprintf(swapFileHandle, "%d\n", physmem[starting_address+i]);
+		printf("%d\n", physmem[starting_address+i]);
 	}
 
 	for(int i = 0; i < PAGE_SIZE; i++){ // frees corresponding frame of physical memory
-		physmem[starting_address] = 0;
+		physmem[starting_address] = -1;
 	}
 
 	printf("Frame %d written to swap slot %d on disk \n", frametoEvict, swapSlot);
 	fclose(swapFileHandle);
 	UpdateFreePages(frametoEvict);
-	PT_UpdatePTE(frametoEvict, swapSlot); 
-	PT_CheckPTEvicted(frametoEvict);
+	PT_UpdatePTE(frametoEvict, swapSlot);
+	int PT_num = PT_CheckPTEvicted(frametoEvict);
+	if(PT_num<4){
+		printf("Set starting address of page table %d to %d on disk\n", PT_num, swapSlot);
+		ptRegVals[PT_num].ptStartPA = swapSlot; // sets starting address of PT to swap slot on disk
+	}
 	FILE* file = fopen("disk.txt","r");
 	// while (fscanf(file, "%d", &val) == 1) {
     //     // printf("Value: %d\n", val);
@@ -305,13 +312,14 @@ int PT_Evict() {
 int PT_CheckPTEvicted(int frameNum){
 	int pa = frameNum * PAGE_SIZE;
 	for(int i = 0; i <NUM_PAGES; i++){
-		if(pa == ptRegVals[i].ptStartPA)
+		if(pa == ptRegVals[i].ptStartPA && ptRegVals[i].present)
 		{
 			printf("Page table %d was evicted from frame %d\n", i, frameNum);
 			ptRegVals[i].present = 0;
-			return 1;
+			return i;
 		}
 	}
+	return 4;
 }
 
 /* Updates PTE when a page is written to disk*/
@@ -344,28 +352,53 @@ int PT_UpdatePTE(int frame, int diskOffset){
 
 /* Searches disk for appropriate page and loads it into physical memory */
 
-void PT_BringFromDisk(int pid, int VPN, int frameNum){
+void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
 	int* physmem = Memsim_GetPhysMem();
 	int val = 0;
-	int disk_pa = PT_VPNtoPA(pid, VPN);
+	int disk_pa; 
+	if(!pageTable){
+		disk_pa = PT_VPNtoPA(pid, VPN);
+	}
+	if(pageTable){
+		disk_pa = ptRegVals[pid].ptStartPA;
+		printf("Disk address for PT %d: %d\n", pid, disk_pa);
+	}
 	FILE* file = fopen("disk.txt","r");
-	int start = 0;
+	int current_pos = 0;
 	int end = disk_pa + PAGE_SIZE;
 	int offset = 0;
 	while (fscanf(file, "%d", &val) == 1) {
-		if(disk_pa >= start && disk_pa < end){
-			printf("Value: %d\n", val);
+		// printf("Value: %d\n", val);
+		if(current_pos >= disk_pa && current_pos < end){
+			printf("Value: %d at disk pa %d\n", val, disk_pa+offset);
 			physmem[frameNum*PAGE_SIZE+offset] = val; // loads disk content into physical memory
-			printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
-			PT_SetPresent(pid, VPN); // sets present bit of VPN now in memory to 1
-			PT_UpdatePhysicalAddress(pid, VPN, frameNum*PAGE_SIZE);
-			disk_pa++;
+			// printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
+			if(!pageTable){
+				PT_SetPresent(pid, VPN); // sets present bit of VPN now in memory to 1
+				PT_UpdatePhysicalAddress(pid, VPN, frameNum*PAGE_SIZE);
+			}
 			offset++;
 			// printf("Physical address of page %d for pid %d updated to %d \n", VPN, pid, frameNum*PAGE_SIZE);
 		}
-		start++;
+		current_pos++;
     }
-    printf("VPN %d for pid %d brought from disk at disk offset %d \n", VPN, pid, disk_pa);
+	// int i = 0;
+	// while (fscanf(file, "%d", &val) == 1 && disk_pa >= start && disk_pa < end) {
+	// 	if(i>15){
+	// 		printf("Value: %d\n", val); 
+	// 	}
+	// 	i++;
+	// }
+	if(pageTable == 0){
+    	printf("VPN %d for pid %d brought from disk at disk offset %d \n", VPN, pid, disk_pa-PAGE_SIZE);
+	}
+    if(pageTable){
+		printf("Page Table for pid %d brought from disk at disk offset %d \n", pid, disk_pa-PAGE_SIZE);
+		ptRegVals[pid].ptStartPA = frameNum * PAGE_SIZE;
+		ptRegVals[pid].present = 1;
+		printf("Page Table for pid %d put into phys mem %d \n", pid, frameNum * PAGE_SIZE);
+
+	}
 }
 
 /*
@@ -382,7 +415,7 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum){
 int PT_VPNtoPA(int pid, int VPN){
 	int* physmem = Memsim_GetPhysMem();
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
-	printf("Starting physical address for page table %d: %d\n", pid, ptStartPA);
+	// printf("Starting physical address for page table %d: %d\n", pid, ptStartPA);
 	if(ptStartPA == -1){
 		return -1;
 	}
@@ -411,9 +444,10 @@ int PT_PIDHasWritePerm(int pid, int VPN){
     int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 	for(int i = 0; i<PAGE_SIZE; i++){
+		// printf("We are in this loop yay \n");
 		if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
 			uint8_t entrybits = physmem[ptStartPA+i-1];
-			// printf("Protection bit: %d\n",entrybits>>1 & 1);
+			printf("Protection bit: %d\n",entrybits>>1 & 1);
 			if((entrybits>>1 & 1)==1){
 				loc = 0;
 				return TRUE;

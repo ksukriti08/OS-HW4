@@ -34,7 +34,7 @@ void MemsimConfigSanityChecks() { // you should not modify this function
  */
 void Memsim_Init() { // zero free pages list 
     MemsimConfigSanityChecks();
-    memset(physmem, 0, sizeof(physmem)); // zero out physical memory
+    memset(physmem, -1, sizeof(physmem)); // zero out physical memory
 	memset(freePages, 0, sizeof(freePages)); // zero implies free / FALSE / not used
 }
 
@@ -63,6 +63,6 @@ int Memsim_FirstFreePFN(){
 int UpdateFreePages(int frameNum){
     freePages[frameNum] = 0;
     for(int i = 0; i < NUM_PAGES; i++){
-        // printf("Frame: %d, Free: %d\n", i,freePages[i]);
+        printf("Frame: %d, Free: %d\n", i,freePages[i]);
         }
 }

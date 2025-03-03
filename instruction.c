@@ -22,12 +22,12 @@ int Instruction_Map(int pid, int va, int value_in){
 		return 1;
 	}
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && PT_PIDHasWritePerm(pid, VPN(va))) {
-		printf("Error: Virtual page already mapped into physical frame %d.\n\n", frame);
+		printf("Error: Virtual page already mapped into physical frame %d.\n\n", frame/PAGE_SIZE);
 		return 1;
 	} 
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && !PT_PIDHasWritePerm(pid, VPN(va))) {
 	    PT_UpdateProtection(pid, VPN(va));
-		printf("Tried to updated PTE\n\n");
+		printf("Tried to update PTE\n\n");
 		return 1;
 	} 
 	//todo
@@ -37,6 +37,7 @@ int Instruction_Map(int pid, int va, int value_in){
     if(free_page == -1){
 		PT_Evict();
 		free_page = Memsim_FirstFreePFN();
+		printf("Physical address of starting free page: %d \n", free_page);
 		// printf("Error, no free pages\n");
 		// return 0;
 	}
@@ -54,8 +55,12 @@ int Instruction_Map(int pid, int va, int value_in){
 		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(next_free_page));
 		return 1;
 	}
-	if(!PT_PageTableInMem){
+	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
+		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+		PT_SetPTE(pid, VPN(va), PFN(free_page), 1, value_in, 1, 1);
+		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(free_page));
 		return 1;
 	}
     else {
@@ -80,19 +85,20 @@ int Instruction_Store(int pid, int va, int value_in){
 		return 1;
 	}
 
+	if(!PT_PageTableInMem(pid)){
+		printf("Error: Page table for pid %d not in memory.\n\n", pid);
+		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+	}
+
 	if (!PT_PIDHasWritePerm(pid, VPN(va))) { //check if memory is writable
 		printf("Error: virtual address %d does not have write permissions.\n\n", va);
 		return 1;
 	}	
 
-	if(!PT_PageTableInMem){
-		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		return 1;
-	}
-
 	if(!PT_CheckPresent(pid, VPN(va))){
 		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted);
+		PT_BringFromDisk(pid, VPN(va), frameEvicted,0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 		physmem[pa] = value_in;
@@ -127,12 +133,18 @@ int Instruction_Load(int pid, int va){
 	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
+		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+		int offset = va % PAGE_SIZE;
+		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
+		printf("The value at virtual address %d (physical address %d) is %d\n\n", va, pa, physmem[pa]);
 		return 1;
 	}
 
+
 	if(!PT_CheckPresent(pid, VPN(va))){
 		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted);
+		PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 		printf("The value at virtual address %d (physical address %d) is %d\n\n", va, pa, physmem[pa]);
