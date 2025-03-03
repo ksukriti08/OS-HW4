@@ -66,3 +66,17 @@ int UpdateFreePages(int frameNum){
         printf("Frame: %d, Free: %d\n", i,freePages[i]);
         }
 }
+
+int UpdateStoredPages(int frameNum){
+    freePages[frameNum] = 1;
+    // for(int i = 0; i < NUM_PAGES; i++){
+    //     printf("Frame: %d, Free: %d\n", i,freePages[i]);
+    //     }
+}
+
+
+void PrintPages(){
+    for(int i = 0; i < NUM_PAGES; i++){
+        printf("Frame: %d, Free: %d\n", i,freePages[i]);
+        }
+}

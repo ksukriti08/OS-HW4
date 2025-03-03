@@ -286,7 +286,7 @@ int PT_Evict() {
 	}
 
 	for(int i = 0; i < PAGE_SIZE; i++){ // frees corresponding frame of physical memory
-		physmem[starting_address] = -1;
+		physmem[starting_address+i] = -1;
 	}
 
 	printf("Frame %d written to swap slot %d on disk \n", frametoEvict, swapSlot);
@@ -390,14 +390,15 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
 	// 	i++;
 	// }
 	if(pageTable == 0){
-    	printf("VPN %d for pid %d brought from disk at disk offset %d \n", VPN, pid, disk_pa-PAGE_SIZE);
+    	printf("VPN %d for pid %d brought from disk at disk offset %d \n", VPN, pid, disk_pa);
+		UpdateStoredPages(frameNum);
 	}
     if(pageTable){
-		printf("Page Table for pid %d brought from disk at disk offset %d \n", pid, disk_pa-PAGE_SIZE);
+		printf("Page Table for pid %d brought from disk at disk offset %d \n", pid, disk_pa);
 		ptRegVals[pid].ptStartPA = frameNum * PAGE_SIZE;
 		ptRegVals[pid].present = 1;
 		printf("Page Table for pid %d put into phys mem %d \n", pid, frameNum * PAGE_SIZE);
-
+		UpdateStoredPages(frameNum);
 	}
 }
 
@@ -423,6 +424,8 @@ int PT_VPNtoPA(int pid, int VPN){
 	for(int i = 0; i <PAGE_SIZE; i++){
 
 		if (loc == 1 && physmem[ptStartPA+i] == VPN ){ 
+			// printf("ptStartPA: %d\n", ptStartPA);
+			// printf("i: %d\n", i);
 			printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
 			printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]*PAGE_SIZE);
 			return physmem[ptStartPA+i+1]*PAGE_SIZE;
@@ -476,5 +479,13 @@ void PT_Init() {
 	// printf("Initiliazed all pages addresses to -1 and not present\n");
 }
 
-// need to brign page table into memory!
-// need to figure out if you can map to same von for same pid while swappign page tables (should nto be able to do this)
+int last_SwapSlot(){
+	return swapSlot - PAGE_SIZE;
+}
+
+
+// if PT not in memory and page is evicted how to handle?
+// its either a page table 
+
+ // if bringing PT evicts VPN needed how to handle? 
+ // if the physical address of page table currently is same as physical address as VPN, then you know you just replaced VPN and we need to bring it back

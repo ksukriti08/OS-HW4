@@ -26,3 +26,4 @@ void PT_BringFromDisk(int pid, int address, int frame, int pageTable);
 int PT_PageTableInMem(int pid);
 void PT_SetPresent(int pid, int VPN);
 int PT_CheckPresent(int pid, int VPN);
+int last_SwapSlot();

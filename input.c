@@ -40,6 +40,7 @@ void InputDispatchCommand(int pid, char* instruction_type, int virtual_address, 
 	} else{
 		printf("Invalid Instruction type. Valid instructions are map, store, and load.\n");
 	}
+	PrintPages();
 }
 
 int InputParseAndValidateLine(char* line, int* pidOut, char** instructionTypeOut, int* VAOut, int* valOut) {
