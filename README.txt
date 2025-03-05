@@ -1,0 +1,1 @@
+Round robin was used for the eviction strategy. 

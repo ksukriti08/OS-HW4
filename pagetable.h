@@ -27,3 +27,4 @@ int PT_PageTableInMem(int pid);
 void PT_SetPresent(int pid, int VPN);
 int PT_CheckPresent(int pid, int VPN);
 int last_SwapSlot();
+int checkVPNcreated(int pid, int VPN);

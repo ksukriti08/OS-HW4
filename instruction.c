@@ -137,6 +137,10 @@ int Instruction_Load(int pid, int va){
 		printf("Error: The virtual address %d is not valid.\n\n", va);
 		return 1;
 	}
+	if(!checkVPNcreated(pid, VPN(va))){
+		printf("Error: The virtual page %d has not been created.\n\n", VPN(va));
+		return 1;
+	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
 		int frameEvicted = PT_Evict(); // should check if a frame is free first
@@ -148,7 +152,6 @@ int Instruction_Load(int pid, int va){
 			PT_UpdatePhysicalAddress(pid,VPN(va), last_SwapSlot());
 		}
 		if(!PT_CheckPresent(pid, VPN(va))){
-			printf("bye\n");
 			int frameEvicted = PT_Evict(); // check if page table is in memory
 			PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
 			int offset = va % PAGE_SIZE;

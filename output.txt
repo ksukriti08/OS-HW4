@@ -1,0 +1,32 @@
+Script started on 2025-03-05 13:16:14-05:00 [TERM="xterm-256color" TTY="/dev/pts/3" COLUMNS="80" LINES="20"]
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ ls
+[?2004lautotest.sh  input.o        Makefile  [0m[01;32mmmu[0m    output.txt   README.txt
+disk.txt     instruction.c  memsim.c  mmu.c  pagetable.c  [01;34mtest[0m
+input.c      instruction.h  memsim.h  mmu.h  pagetable.h
+input.h      instruction.o  memsim.o  mmu.o  pagetable.o
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ 0,map,0,0
+[?2004l0,map,0,0: command not found
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ 0,map,0,0ls[K./mmu[K[K[K[K[Kmake
+[?2004lmake: Nothing to be done for 'all'.
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ ./mmu
+[?2004lInstruction? 0,map,0,0
+Free frame found: 1 at address 16 
+Put page table for PID 0 into physical frame 0.
+Mapped virtual address 0 (page 0) for pid 0 into physical frame 1.
+
+Instruction? 0,load,16,NA
+VPN 1 for pid 0 IS NOT present in physical memory
+Frame 1 written to swap slot 0 on disk 
+Present bit for virtual page 0 for pid 0 updated to: 0
+VPN 1 for pid 0 brought from disk at disk offset -1 
+The value at virtual address 16 (physical address -1) is 0
+
+Instruction? ^C
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ ./mmu[1Pmake
+[?2004lgcc -c pagetable.c -o pagetable.o
+gcc -c instruction.c -o instruction.o
+gcc mmu.o input.o pagetable.o memsim.o instruction.o -o mmu
+[?2004h]0;suki@acerswift: ~/WPI 2021 - 2025/CS 3033/HW4[01;32msuki@acerswift[00m:[01;34m~/WPI 2021 - 2025/CS 3033/HW4[00m$ exit
+[?2004lexit
+
+Script done on 2025-03-05 13:21:47-05:00 [COMMAND_EXIT_CODE="0"]

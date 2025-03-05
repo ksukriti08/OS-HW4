@@ -58,11 +58,11 @@ void PT_SetPTE(int pid, int VPN, int PFN, int valid, int protection, int present
 	bits|=(entry.present<<2);
 	bits|=(entry.referenced<<3);
 	physmem[curr_index + (VPN*3)] = bits;
-	printf("Set entry bits %d for PID %d at physical memory: %d\n", bits, pid, curr_index + (VPN*3));
+	// printf("Set entry bits %d for PID %d at physical memory: %d\n", bits, pid, curr_index + (VPN*3));
 	physmem[curr_index + (VPN*3) + 1] = VPN;
-	printf("Set VPN %d for PID %d at physical memory: %d\n", physmem[curr_index + (VPN*3)+1], pid, curr_index + (VPN*3)+ 1);
+	// printf("Set VPN %d for PID %d at physical memory: %d\n", physmem[curr_index + (VPN*3)+1], pid, curr_index + (VPN*3)+ 1);
 	physmem[curr_index + (VPN*3) + 2] = PFN;
-	printf("PFN: %d\n", PFN);
+	// printf("PFN: %d\n", PFN);
 }
 
 /* Updates protection bit to 1 of virtual page */
@@ -258,6 +258,25 @@ int PT_GetRootPtrRegVal(int pid){
     return ptRegVals[pid].ptStartPA;
 }
 
+
+int checkVPNcreated(int pid, int VPN){
+	int* physmem = Memsim_GetPhysMem();
+	assert(PT_PageTableExists(pid)); //  table should exist if this is being called
+	int ptStartPA = PT_GetRootPtrRegVal(pid);
+	int loc = 0;
+		for(int i = 0; i<PAGE_SIZE; i++){
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+				return 1;
+			}
+			if(loc == 2){
+				loc = -1;
+			}
+			loc++;
+		}
+	return 0;
+}
+
+
 /*
  * Evicts the next page. 
  * Updates the corresponding information in the page table, returns the PA of the evicted page.
@@ -282,7 +301,7 @@ int PT_Evict() {
 	FILE* swapFileHandle = fopen("disk.txt","a");
 	for(int i = 0; i < PAGE_SIZE; i++){
 		fprintf(swapFileHandle, "%d\n", physmem[starting_address+i]);
-		printf("%d\n", physmem[starting_address+i]);
+		// printf("%d\n", physmem[starting_address+i]);
 	}
 
 	for(int i = 0; i < PAGE_SIZE; i++){ // frees corresponding frame of physical memory
@@ -332,7 +351,7 @@ int PT_UpdatePTE(int frame, int diskOffset){
 			int loc = 0;
 			for(int j = 0; j < PAGE_SIZE; j++){
 				if (loc == 2 && physmem[starting_address+j] == frame){ 
-					printf("Frame %d found in page table for pid %d \n", frame, i);
+					// printf("Frame %d found in page table for pid %d \n", frame, i);
 					PT_SetNotPresent(i, physmem[starting_address+j-1]); // sets virtual page of corresponding pid to not present in memmory 
 					PT_UpdatePhysicalAddress(i, physmem[starting_address+j-1], swapSlot); // sets physical address to corresponding offset in disk
 					return 0;
@@ -344,7 +363,7 @@ int PT_UpdatePTE(int frame, int diskOffset){
 			}
 		}
 	}
-	printf("Frame %d not found in any of the page tables in memory currently \n", frame);
+	// printf("Frame %d not found in any of the page tables in memory currently \n", frame);
 
 }
 
@@ -370,7 +389,7 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
 	while (fscanf(file, "%d", &val) == 1) {
 		// printf("Value: %d\n", val);
 		if(current_pos >= disk_pa && current_pos < end){
-			printf("Value: %d at disk pa %d\n", val, disk_pa+offset);
+			// printf("Value: %d at disk pa %d\n", val, disk_pa+offset);
 			physmem[frameNum*PAGE_SIZE+offset] = val; // loads disk content into physical memory
 			// printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
 			if(!pageTable){
