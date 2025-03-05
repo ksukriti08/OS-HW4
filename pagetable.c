@@ -436,8 +436,8 @@ int PT_VPNtoPA(int pid, int VPN){
 		if (loc == 1 && physmem[ptStartPA+i] == VPN ){ 
 			// printf("ptStartPA: %d\n", ptStartPA);
 			// printf("i: %d\n", i);
-			printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
-			printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]*PAGE_SIZE);
+			// printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
+			// printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]*PAGE_SIZE);
 			return physmem[ptStartPA+i+1]*PAGE_SIZE;
 		}
 		if(loc == 2){
@@ -460,7 +460,7 @@ int PT_PIDHasWritePerm(int pid, int VPN){
 		// printf("We are in this loop yay \n");
 		if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
 			uint8_t entrybits = physmem[ptStartPA+i-1];
-			printf("Protection bit: %d\n",entrybits>>1 & 1);
+			// printf("Protection bit: %d\n",entrybits>>1 & 1);
 			if((entrybits>>1 & 1)==1){
 				loc = 0;
 				return TRUE;

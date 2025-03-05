@@ -26,8 +26,13 @@ int Instruction_Map(int pid, int va, int value_in){
 		return 1;
 	} 
 	if((frame = PT_VPNtoPA(pid, VPN(va))) != -1 && !PT_PIDHasWritePerm(pid, VPN(va))) {
-	    PT_UpdateProtection(pid, VPN(va));
-		printf("Tried to update PTE\n\n");
+		if(value_in == 1){
+			PT_UpdateProtection(pid, VPN(va));
+			// printf("Tried to update PTE\n\n");
+		}
+		else{
+			printf("Did not update write permissions \n");
+		}
 		return 1;
 	} 
 	//todo
