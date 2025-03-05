@@ -35,9 +35,30 @@ int Instruction_Map(int pid, int va, int value_in){
     int free_page = Memsim_FirstFreePFN();
 	// If no empty page was found, we must evict a page to make room
     if(free_page == -1){
-		PT_Evict();
+		// printf("%d\n", PT_PageTableInMem(pid));
+		// printf("%d\n", getFrameinLine());
+		// printf("%d\n", PT_GetRootPtrRegVal(pid));
+		if(PT_PageTableInMem(pid) && (getFrameinLine()*PAGE_SIZE == PT_GetRootPtrRegVal(pid))){
+			skipFrame(); // do not evict page table for current process 
+			printf("Skipping frame to evict to avoid evicting page table for this process \n");
+		}
+		int evictedFrame = PT_Evict(pid);
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+		    PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			if(PT_PageTableInMem(pid) && (getFrameinLine()*PAGE_SIZE == PT_GetRootPtrRegVal(pid))){
+				skipFrame(); // do not evict page table for current process 
+				printf("Skipping frame to evict to avoid evicting page table for this process \n");
+			}	
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+			// printf("PTinmem: %d\n", PTinmem);
+		}
 		free_page = Memsim_FirstFreePFN();
-		printf("Physical address of starting free page: %d \n", free_page);
+		// printf("Physical address of starting free page: %d \n", free_page);
 		// printf("Error, no free pages\n");
 		// return 0;
 	}
@@ -47,7 +68,17 @@ int Instruction_Map(int pid, int va, int value_in){
 		// Init the Page table  
 		int next_free_page = PT_PageTableInit(pid, free_page);
 		if(next_free_page == -1){
-			PT_Evict();
+			int evictedFrame = PT_Evict(pid);
+			int PTinmem = checkVPPTinMEM();
+			while(!PTinmem){ // keeps going until a PT is evicted
+				int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+				PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+				PT_SetNotPresentF(PTtobring, evictedFrame);
+				PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+				evictedFrame = PT_Evict(pid); // still need a free frame
+				PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+				// printf("PTinmem: %d\n", PTinmem);
+			}
 			next_free_page = Memsim_FirstFreePFN();
 		}
 		printf("Put page table for PID %d into physical frame %d.\n", pid, PFN(free_page));
@@ -57,8 +88,18 @@ int Instruction_Map(int pid, int va, int value_in){
 	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+		int evictedFrame = PT_Evict(pid);
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+		    PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+			// printf("PTinmem: %d\n", PTinmem);
+		}
+		PT_BringFromDisk(pid, VPN(va), evictedFrame,1);
 		PT_SetPTE(pid, VPN(va), PFN(free_page), 1, value_in, 1, 1);
 		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(free_page));
 		return 1;
@@ -85,13 +126,29 @@ int Instruction_Store(int pid, int va, int value_in){
 		return 1;
 	}
 
+	if(!PT_PageTableExists(pid)){
+		printf("Page table does not exist yet.\n\n"); 
+		return 1;
+	}
+
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+		int evictedFrame = PT_Evict(pid);
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+		    PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+			// printf("PTinmem: %d\n", PTinmem);
+		}
+
+		PT_BringFromDisk(pid, VPN(va), evictedFrame,1);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
-		if(frameEvicted * PAGE_SIZE == pa){
+		if(evictedFrame * PAGE_SIZE == pa){
 			PT_SetNotPresent(pid, VPN(va));
 			PT_UpdatePhysicalAddress(pid ,VPN(va), last_SwapSlot());
 		}
@@ -103,8 +160,24 @@ int Instruction_Store(int pid, int va, int value_in){
 	}	
 
 	if(!PT_CheckPresent(pid, VPN(va))){
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted,0);
+		int evictedFrame = PT_Evict(pid); 
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+		    PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			if(PT_PageTableInMem(pid) && (getFrameinLine()*PAGE_SIZE == PT_GetRootPtrRegVal(pid))){
+				skipFrame(); // do not evict page table for current process 
+				printf("Skipping frame to evict to avoid evicting page table for this process \n");
+			}	
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+			// printf("PTinmem: %d\n", PTinmem);
+		}
+
+
+		PT_BringFromDisk(pid, VPN(va), evictedFrame,0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 		physmem[pa] = value_in;
@@ -137,20 +210,52 @@ int Instruction_Load(int pid, int va){
 		printf("Error: The virtual address %d is not valid.\n\n", va);
 		return 1;
 	}
+	if(!PT_PageTableExists(pid)){
+		printf("Page table does not exist yet.\n\n"); 
+		return 1;
+	}
+	if(!checkVPNcreated(pid, VPN(va))){
+		printf("Error: The virtual page %d has not been created.\n\n", VPN(va));
+		return 1;
+	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+		int evictedFrame = PT_Evict(pid); 
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+		    PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+			// printf("PTinmem: %d\n", PTinmem);
+		}
+
+		PT_BringFromDisk(pid, VPN(va), evictedFrame,1);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
-		if(frameEvicted * PAGE_SIZE == pa){
+		if(evictedFrame * PAGE_SIZE == pa){
 			PT_SetNotPresent(pid, VPN(va));
 			PT_UpdatePhysicalAddress(pid,VPN(va), last_SwapSlot());
 		}
 		if(!PT_CheckPresent(pid, VPN(va))){
-			printf("bye\n");
-			int frameEvicted = PT_Evict(); // check if page table is in memory
-			PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
+			int evictedFrame = PT_Evict(pid); 
+			int PTinmem = checkVPPTinMEM();
+			while(!PTinmem){ // keeps going until a PT is evicted
+				int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+				PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+				PT_SetNotPresentF(PTtobring, evictedFrame);
+				PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+				if(PT_PageTableInMem(pid) && (getFrameinLine()*PAGE_SIZE == PT_GetRootPtrRegVal(pid))){
+					skipFrame(); // do not evict page table for current process 
+					printf("Skipping frame to evict to avoid evicting page table for this process \n");
+				}		
+				evictedFrame = PT_Evict(pid); // still need a free frame
+				PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+				// printf("PTinmem: %d\n", PTinmem);
+			}
+			PT_BringFromDisk(pid, VPN(va), evictedFrame, 0);
 			int offset = va % PAGE_SIZE;
 			pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 			printf("The value at virtual address %d (physical address %d) is %d\n\n", va, pa, physmem[pa]);
@@ -164,8 +269,22 @@ int Instruction_Load(int pid, int va){
 
 
 	if(!PT_CheckPresent(pid, VPN(va))){
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
+		int evictedFrame = PT_Evict(pid); 
+		int PTinmem = checkVPPTinMEM();
+		while(!PTinmem){ // keeps going until a PT is evicted
+			int PTtobring = checkDiskforPT(evictedFrame); // checks disk for page table to bring that had mapping for previously evicted frame
+			printf("PttoBring: %d\n", PTtobring);
+			PT_BringFromDisk(PTtobring, VPN(va), evictedFrame,1); // brings corresponding page table from disk into free frame
+			PT_SetNotPresentF(PTtobring, evictedFrame);
+			PT_UpdatePhysicalAddressF(PTtobring, evictedFrame, last_SwapSlot());
+			if(PT_PageTableInMem(pid) && (getFrameinLine()*PAGE_SIZE == PT_GetRootPtrRegVal(pid))){
+				skipFrame(); // do not evict page table for current process 
+				printf("Skipping frame to evict to avoid evicting page table for this process \n");
+			}	
+			evictedFrame = PT_Evict(pid); // still need a free frame
+			PTinmem = checkVPPTinMEM(); // checks if the previously evicted frame had PT not in memory 
+		}
+	PT_BringFromDisk(pid, VPN(va), evictedFrame, 0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
 		printf("The value at virtual address %d (physical address %d) is %d\n\n", va, pa, physmem[pa]);
