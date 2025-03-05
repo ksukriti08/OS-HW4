@@ -74,7 +74,7 @@ void PT_UpdateProtection(int pid, int VPN) {
     int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 		for(int i = 0; i <16; i++){
-			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){ 
 				uint8_t bits = physmem[ptStartPA+i-1];
 				bits|=(1<<1);
 				physmem[ptStartPA+i-1] = bits;
@@ -96,7 +96,7 @@ void PT_SetNotPresent(int pid, int VPN){
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 		for(int i = 0; i<PAGE_SIZE; i++){
-			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){ 
 				uint8_t bits = physmem[ptStartPA+i-1];
 				bits&=~(1<<2);
 				physmem[ptStartPA+i-1] = bits;
@@ -118,7 +118,7 @@ void PT_SetPresent(int pid, int VPN){
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 		for(int i = 0; i<PAGE_SIZE; i++){
-			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){ 
 				uint8_t bits = physmem[ptStartPA+i-1];
 				bits|=(1<<2);
 				physmem[ptStartPA+i-1] = bits;
@@ -141,7 +141,7 @@ int PT_CheckPresent(int pid, int VPN){
 	assert(PT_PageTableExists(pid)); //  table should exist if this is being called
 	int loc = 0;
 	for(int i = 0; i<PAGE_SIZE; i++){
-		if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+		if (loc == 1 && physmem[ptStartPA+i] == VPN){
 			uint8_t entrybits = physmem[ptStartPA+i-1];
 			// printf("Protection bit: %d\n",entrybits>>1 & 1);
 			if((entrybits>>2 & 1)==1){
@@ -168,7 +168,7 @@ void PT_UpdatePhysicalAddress(int pid, int VPN, int PA){
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 		for(int i = 0; i<PAGE_SIZE; i++){
-			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){ 
 				physmem[ptStartPA+i+1] = PA/PAGE_SIZE;
 				// printf("Physical address for virtual page %d for pid %d updated to %d \n",VPN, pid, PA);
 				return;
@@ -258,6 +258,7 @@ int PT_GetRootPtrRegVal(int pid){
     return ptRegVals[pid].ptStartPA;
 }
 
+/* checks if virtual page for pid has been created */
 
 int checkVPNcreated(int pid, int VPN){
 	int* physmem = Memsim_GetPhysMem();
@@ -265,7 +266,7 @@ int checkVPNcreated(int pid, int VPN){
 	int ptStartPA = PT_GetRootPtrRegVal(pid);
 	int loc = 0;
 		for(int i = 0; i<PAGE_SIZE; i++){
-			if (loc == 1 && physmem[ptStartPA+i] == VPN){ // Also check if given PID has a page table 
+			if (loc == 1 && physmem[ptStartPA+i] == VPN){
 				return 1;
 			}
 			if(loc == 2){
@@ -280,24 +281,14 @@ int checkVPNcreated(int pid, int VPN){
 /*
  * Evicts the next page. 
  * Updates the corresponding information in the page table, returns the PA of the evicted page.
- * 
- * The supplied input and output used in autotest.sh *RR tests, uses the round-robin algorithm. 
- * You may also implement the simple and powerful Least Recently Used (LRU) policy, 
- * or another fair algorithm.
- */
+  */
 int PT_Evict() {
 	
 	int* physmem = Memsim_GetPhysMem();
 
 	frametoEvict = frametoEvict % NUM_FRAMES;
 	int val = 0;
-
-	// need to get physical address of virtual page to eject 
-
 	int starting_address = PAGE_SIZE * frametoEvict; // get current starting pa for virtual page
-	// ptRegVals[pageToEvict].ptStartPA = swapSlot; // set start pa to pa on disk
-	// ptRegVals[pageToEvict].present = 0; // set present to false since it is on disk
-	// write all content to disk
 	FILE* swapFileHandle = fopen("disk.txt","a");
 	for(int i = 0; i < PAGE_SIZE; i++){
 		fprintf(swapFileHandle, "%d\n", physmem[starting_address+i]);
@@ -503,8 +494,3 @@ int last_SwapSlot(){
 }
 
 
-// if PT not in memory and page is evicted how to handle?
-// its either a page table 
-
- // if bringing PT evicts VPN needed how to handle? 
- // if the physical address of page table currently is same as physical address as VPN, then you know you just replaced VPN and we need to bring it back
