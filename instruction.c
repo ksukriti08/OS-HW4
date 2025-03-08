@@ -151,6 +151,7 @@ int Instruction_Load(int pid, int va){
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
 		int frameEvicted = PT_Evict(0,0,1); // should check if a frame is free first
+		printf("Frame Evicted: %d\n", frameEvicted);
 		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
@@ -160,6 +161,8 @@ int Instruction_Load(int pid, int va){
 		}
 		if(!PT_CheckPresent(pid, VPN(va))){
 			int frameEvicted = PT_Evict(0,0,1); // check if page
+			printf("Frame Evicted: %d\n", frameEvicted);
+			printf("Frame Evicted: %d\n", frameEvicted);
 			PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
 			int offset = va % PAGE_SIZE;
 			pa = PT_VPNtoPA(pid, VPN(va)) + offset;

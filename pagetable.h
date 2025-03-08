@@ -31,3 +31,4 @@ int checkVPNcreated(int pid, int VPN);
 int checkDiskforPT(int evictedFrame);
 void PT_SetNotPresentF(int pid, int Frame);
 void PT_UpdatePhysicalAddressF(int pid, int PFN, int PA);
+int PT_DiskVPNtoPA(int pid, int VPN);

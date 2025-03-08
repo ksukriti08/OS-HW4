@@ -229,7 +229,7 @@ int PT_PageTableInit(int pid, int pa){
  */
 int PT_PageTableInMem(int pid){
 	if(ptRegVals[pid].present == 0){
-		printf("Page table for pid %d not in memory\n", pid);
+		// printf("Page table for pid %d not in memory\n", pid);
 		return 0;
 	}
 	else{
@@ -252,10 +252,10 @@ int PT_GetRootPtrRegVal(int pid){
 	}
 	// If the page table is not in memory, swap it in
     if(ptRegVals[pid].present == 0){
-		printf("Evicting to get PT\n");
-		PT_Evict(0,0,0);
-		int free_page = Memsim_FirstFreePFN();
-		PT_BringFromDisk(pid, 0, free_page, 1);
+		// printf("Evicting to get PT\n");
+		// PT_Evict(0,0,0);
+		// int free_page = Memsim_FirstFreePFN();
+		// PT_BringFromDisk(pid, 0, free_page, 1);
 		return -1;
 	}	
 	// Return the starting physical address of the page table
@@ -330,9 +330,11 @@ int PT_Evict(int map, int store, int load) {
 		if(map){
 			PT_Evict(1,0,0);
 		}
+		return frametoEvict-1;
+	}	
 	printf("returning\n");
 	return frametoEvict-1;
-	}	
+
 }
 
 void PT_SetNotPresentF(int pid, int Frame){
@@ -471,7 +473,8 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
 	int val = 0;
 	int disk_pa; 
 	if(!pageTable){
-		disk_pa = PT_VPNtoPA(pid, VPN);
+		disk_pa = PT_DiskVPNtoPA(pid, VPN);
+		printf("Disk address for Page %d: %d\n", pid, disk_pa);
 	}
 	if(pageTable){
 		disk_pa = ptRegVals[pid].ptStartPA;
@@ -482,14 +485,14 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
 	int end = disk_pa + PAGE_SIZE;
 	int offset = 0;
 	while (fscanf(file, "%d", &val) == 1) {
-		// printf("Value: %d\n", val);
+		// printf("Current pose: %d\n", current_pos);
 		if(current_pos >= disk_pa && current_pos < end){
-			// printf("Value: %d at disk pa %d\n", val, disk_pa+offset);
+			printf("Value: %d at disk pa %d\n", val, disk_pa+offset);
 			physmem[frameNum*PAGE_SIZE+offset] = val; // loads disk content into physical memory
-			// printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
+			printf("Put %d at physical memory loc: %d \n", val, frameNum*PAGE_SIZE+offset);
 			if(!pageTable){
 				PT_SetPresent(pid, VPN); // sets present bit of VPN now in memory to 1
-				PT_UpdatePhysicalAddress(pid, VPN, frameNum*PAGE_SIZE);
+				PT_UpdatePhysicalAddress(pid, VPN, frameNum);
 			}
 			offset++;
 			// printf("Physical address of page %d for pid %d updated to %d \n", VPN, pid, frameNum*PAGE_SIZE);
@@ -510,6 +513,7 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
     if(pageTable){
 		printf("Page Table for pid %d brought from disk at disk offset %d \n", pid, disk_pa);
 		ptRegVals[pid].ptStartPA = frameNum * PAGE_SIZE;
+
 		ptRegVals[pid].present = 1;
 		printf("Page Table for pid %d put into frame %d \n", pid, frameNum);
 		UpdateStoredPages(frameNum);
@@ -526,6 +530,30 @@ void PT_BringFromDisk(int pid, int VPN, int frameNum, int pageTable){
  * Otherwise, returns -1.
  */
 
+int PT_DiskVPNtoPA(int pid, int VPN){
+	int* physmem = Memsim_GetPhysMem();
+	int ptStartPA = PT_GetRootPtrRegVal(pid);
+	printf("Starting physical address for page table %d: %d\n", pid, ptStartPA);
+	if(ptStartPA == -1){
+		return -1;
+	}
+	int loc = 0;
+	for(int i = 0; i <PAGE_SIZE; i++){
+
+		if (loc == 1 && physmem[ptStartPA+i] == VPN ){ 
+			// printf("ptStartPA: %d\n", ptStartPA);
+			// printf("i: %d\n", i);
+			// printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
+			// printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]);
+			return physmem[ptStartPA+i+1];
+		}
+		if(loc == 2){
+			loc = -1;
+		}
+		loc++;
+	}
+	return -1; 
+	}
 
 int PT_VPNtoPA(int pid, int VPN){
 	int* physmem = Memsim_GetPhysMem();
@@ -538,10 +566,10 @@ int PT_VPNtoPA(int pid, int VPN){
 	for(int i = 0; i <PAGE_SIZE; i++){
 
 		if (loc == 1 && physmem[ptStartPA+i] == VPN ){ 
-			// printf("ptStartPA: %d\n", ptStartPA);
-			// printf("i: %d\n", i);
-			// printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
-			// printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]*PAGE_SIZE);
+			printf("ptStartPA: %d\n", ptStartPA);
+			printf("i: %d\n", i);
+			printf("Page frame number of VPN %d for pid %d: %d\n", VPN, pid, physmem[ptStartPA+i+1]);
+			printf("Start of physical address of VPN %d: %d\n", VPN, physmem[ptStartPA+i+1]*PAGE_SIZE);
 			return physmem[ptStartPA+i+1]*PAGE_SIZE;
 		}
 		if(loc == 2){
