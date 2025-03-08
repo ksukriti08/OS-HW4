@@ -1,0 +1,144 @@
+Script started on 2025-03-05 13:51:13-05:00 [TERM="xterm-256color" TTY="/dev/pts/3" COLUMNS="80" LINES="20"]
+suki@acerswift:~/WPI 2021 - 2025/CS 3033/HW4$ make
+gcc -c instruction.c -o instruction.o
+gcc mmu.o input.o pagetable.o memsim.o instruction.o -o mmu
+suki@acerswift:~/WPI 2021 - 2025/CS 3033/HW4$ ./mmu
+Instruction? 0,map,0,1
+Free frame found: 1 at address 16
+Put page table for PID 0 into physical frame 0.
+Mapped virtual address 0 (page 0) for pid 0 into physical frame 1.
+
+Instruction? 0,map,15,1
+Error: Virtual page already mapped into physical frame 1.
+
+Instruction? 0,map,16,1
+Mapped virtual address 16 (page 1) for pid 0 into physical frame 2.
+
+Instruction? 0,map,32,0
+Mapped virtual address 32 (page 2) for pid 0 into physical frame 3.
+
+Instruction? 0,store,35,237
+Error: virtual address 35 does not have write permissions.
+
+Instruction? 0,store,19,255
+VPN 1 for pid 0 IS present in physical memory
+Stored value 255 at virtual address 19 (physical address 35)
+
+Instruction? 0,load,19,NA
+VPN 1 for pid 0 IS present in physical memory
+The value at virtual address 19 is 255
+
+Instruction? 1,map,19,1
+Frame 1 written to swap slot 0 on disk
+Present bit for virtual page 0 for pid 0 updated to: 0
+Physical address of starting free page: 16
+No more free pages
+Frame 2 written to swap slot 16 on disk
+Present bit for virtual page 1 for pid 0 updated to: 0
+Put page table for PID 1 into physical frame 1.
+Mapped virtual address 19 (page 1) for pid 1 into physical frame 2.
+
+Instruction? 1,map,5,1
+Frame 3 written to swap slot 32 on disk
+Present bit for virtual page 2 for pid 0 updated to: 0
+Physical address of starting free page: 48
+Mapped virtual address 5 (page 0) for pid 1 into physical frame 3.
+
+Instruction? 2,map,63,1
+Frame 0 written to swap slot 48 on disk
+Page table 0 was evicted from frame 0
+Set starting address of page table 0 to 48 on disk
+Physical address of starting free page: 0
+No more free pages
+Frame 1 written to swap slot 64 on disk
+Page table 1 was evicted from frame 1
+Set starting address of page table 1 to 64 on disk
+Put page table for PID 2 into physical frame 0.
+Mapped virtual address 63 (page 3) for pid 2 into physical frame 1.
+
+Instruction? 1,store,5,158
+Error: Page table for pid 1 not in memory.
+
+Frame 2 written to swap slot 80 on disk
+Disk address for PT 1: 64
+Page Table for pid 1 brought from disk at disk offset 64
+Page Table for pid 1 put into phys mem 32
+VPN 0 for pid 1 IS present in physical memory
+Stored value 158 at virtual address 5 (physical address 53)
+
+Instruction? 1,load,5,NA
+VPN 0 for pid 1 IS present in physical memory
+The value at virtual address 5 is 158
+
+Instruction? 0,load,19,NA
+Error, page table not in memory
+Error: Page table for pid 0 not in memory.
+
+Frame 3 written to swap slot 96 on disk
+Present bit for virtual page 0 for pid 1 updated to: 0
+Disk address for PT 0: 48
+Page Table for pid 0 brought from disk at disk offset 48
+Page Table for pid 0 put into phys mem 48
+VPN 1 for pid 0 IS NOT present in physical memory
+Frame 0 written to swap slot 112 on disk
+Present bit for virtual page 0 for pid 0 updated to: 0
+Page table 2 was evicted from frame 0
+Set starting address of page table 2 to 112 on disk
+VPN 1 for pid 0 brought from disk at disk offset 16
+The value at virtual address 19 (physical address 3) is 255
+
+Instruction? 2,store,48,1
+Error: Page table for pid 2 not in memory.
+
+Frame 1 written to swap slot 128 on disk
+Disk address for PT 2: 112
+Page Table for pid 2 brought from disk at disk offset 112
+Page Table for pid 2 put into phys mem 16
+Present bit for virtual page 3 for pid 2 updated to: 0
+VPN 3 for pid 2 IS NOT present in physical memory
+Frame 2 written to swap slot 144 on disk
+Present bit for virtual page 2 for pid 0 updated to: 0
+Page table 1 was evicted from frame 2
+Set starting address of page table 1 to 144 on disk
+VPN 3 for pid 2 brought from disk at disk offset 128
+Stored value 1 at virtual address 48 (physical address 32)
+
+Instruction? 3,map,32,1
+Frame 3 written to swap slot 160 on disk
+Page table 0 was evicted from frame 3
+Set starting address of page table 0 to 160 on disk
+Physical address of starting free page: 48
+No more free pages
+Frame 0 written to swap slot 176 on disk
+Put page table for PID 3 into physical frame 3.
+Mapped virtual address 32 (page 2) for pid 3 into physical frame 0.
+
+Instruction? 1,store,7,15
+Error: Page table for pid 1 not in memory.
+
+Frame 1 written to swap slot 192 on disk
+Page table 2 was evicted from frame 1
+Set starting address of page table 2 to 192 on disk
+Disk address for PT 1: 144
+Page Table for pid 1 brought from disk at disk offset 144
+Page Table for pid 1 put into phys mem 16
+VPN 0 for pid 1 IS NOT present in physical memory
+Frame 2 written to swap slot 208 on disk
+Present bit for virtual page 1 for pid 1 updated to: 0
+VPN 0 for pid 1 brought from disk at disk offset 96
+Stored value 15 at virtual address 7 (physical address 39)
+
+Instruction? 3,store,40,206
+VPN 2 for pid 3 IS present in physical memory
+Stored value 206 at virtual address 40 (physical address 8)
+
+Instruction? 1,load,7,NA
+VPN 0 for pid 1 IS present in physical memory
+The value at virtual address 7 is 15
+
+Instruction? 3,load,40,NA
+VPN 2 for pid 3 IS present in physical memory
+The value at virtual address 40 is 206
+
+Instruction? ^C
+suki@acerswift:~/WPI\2021 - 2025/CS 3033/HW4$ |aperlo-pet’s/\e([^\[\]]|\[.*?[^\[\]]|\[.*?[a-zA-Z]|\].*?\a)//g’ | col -b > projcat0project0 | perl -pe ’s/\e([^\[\]]|\[.*?[a-zA-Z]|\].*?\HW2_es2.txtct4.txtprojec4.txtt

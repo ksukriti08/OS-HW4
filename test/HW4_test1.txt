@@ -1,0 +1,38 @@
+Script started on 2025-03-05 13:37:27-05:00 [TERM="xterm-256color" TTY="/dev/pts/3" COLUMNS="80" LINES="20"]
+suki@acerswift:~/WPI 2021 - 2025/CS 3033/HW4$ make
+gcc -c pagetable.c -o pagetable.o
+gcc mmu.o input.o pagetable.o memsim.o instruction.o -o mmu
+suki@acerswift:~/WPI 2021 - 2025/CS 3033/HW4$ ./mmu
+Instruction? 0,map,0,0
+Free frame found: 1 at address 16
+Put page table for PID 0 into physical frame 0.
+Mapped virtual address 0 (page 0) for pid 0 into physical frame 1.
+
+Instruction? 0,load,16,NA
+Error: The virtual page 1 has not been created.
+
+Instruction? 0,load,14,5
+VPN 0 for pid 0 IS present in physical memory
+The value at virtual address 14 is 0
+
+Instruction? 0,map,10,0
+Did not update write permissions
+Instruction? 0,store,15,255
+Error: virtual address 15 does not have write permissions.
+
+Instruction? 9,map,78,3
+Invalid Process Id.  Process Id must be in range 0-3.
+Instruction? 0,map,16,1
+Mapped virtual address 16 (page 1) for pid 0 into physical frame 2.
+
+Instruction? 0,store,16,256
+Invalid value for store instruction. Value must be 0-255.
+
+Instruction? exit
+Incorrectly formatted instruction.
+Correct format is: process_id,instruction_type,virtual_address,value
+Instruction? ^C
+suki@acerswift:~/WPI 2021 - 2025/CS 3033/HW4$ exit
+exit
+
+Script done on 2025-03-05 13:38:45-05:00 [COMMAND_EXIT_CODE="130"]

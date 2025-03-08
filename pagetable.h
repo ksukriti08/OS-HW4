@@ -13,7 +13,7 @@ void PT_SetPTE(int process_id, int VPN, int PFN, int valid, int protection, int 
 int PT_PageTableInit(int process_id, int pageAddress);
 int PT_PageTableExists(int process_id);
 int PT_GetRootPtrRegVal(int process_id);
-int PT_Evict();
+int PT_Evict(int map, int store, int load);
 int PT_VPNtoPA(int process_id, int VPN);
 int PT_PIDHasWritePerm(int process_id, int VPN);
 void PT_Init();
@@ -28,3 +28,6 @@ void PT_SetPresent(int pid, int VPN);
 int PT_CheckPresent(int pid, int VPN);
 int last_SwapSlot();
 int checkVPNcreated(int pid, int VPN);
+int checkDiskforPT(int evictedFrame);
+void PT_SetNotPresentF(int pid, int Frame);
+void PT_UpdatePhysicalAddressF(int pid, int PFN, int PA);

@@ -40,7 +40,7 @@ int Instruction_Map(int pid, int va, int value_in){
     int free_page = Memsim_FirstFreePFN();
 	// If no empty page was found, we must evict a page to make room
     if(free_page == -1){
-		PT_Evict();
+		PT_Evict(1,0,0);
 		free_page = Memsim_FirstFreePFN();
 		printf("Physical address of starting free page: %d \n", free_page);
 		// printf("Error, no free pages\n");
@@ -52,7 +52,7 @@ int Instruction_Map(int pid, int va, int value_in){
 		// Init the Page table  
 		int next_free_page = PT_PageTableInit(pid, free_page);
 		if(next_free_page == -1){
-			PT_Evict();
+			PT_Evict(1,0,0);
 			next_free_page = Memsim_FirstFreePFN();
 		}
 		printf("Put page table for PID %d into physical frame %d.\n", pid, PFN(free_page));
@@ -62,7 +62,7 @@ int Instruction_Map(int pid, int va, int value_in){
 	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		int frameEvicted = PT_Evict(1,0,0); // should check if a frame is free first
 		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
 		PT_SetPTE(pid, VPN(va), PFN(free_page), 1, value_in, 1, 1);
 		printf("Mapped virtual address %d (page %d) for pid %d into physical frame %d.\n\n", va, VPN(va), pid, PFN(free_page));
@@ -92,15 +92,17 @@ int Instruction_Store(int pid, int va, int value_in){
 
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
-		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
-		int offset = va % PAGE_SIZE;
-		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
-		if(frameEvicted * PAGE_SIZE == pa){
-			PT_SetNotPresent(pid, VPN(va));
-			PT_UpdatePhysicalAddress(pid ,VPN(va), last_SwapSlot());
+		int frameEvicted = PT_Evict(0,1,0); // should check if a frame is free first
+			if(!PT_PageTableInMem(pid)){ // need to make sure we did not bring page table during evictions 
+				PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
+				int offset = va % PAGE_SIZE;
+				pa = PT_VPNtoPA(pid, VPN(va)) + offset;
+				if(frameEvicted * PAGE_SIZE == pa){
+					PT_SetNotPresent(pid, VPN(va));
+					PT_UpdatePhysicalAddress(pid ,VPN(va), last_SwapSlot());
+				}
+			}
 		}
-	}
 
 	if (!PT_PIDHasWritePerm(pid, VPN(va))) { //check if memory is writable
 		printf("Error: virtual address %d does not have write permissions.\n\n", va);
@@ -108,7 +110,7 @@ int Instruction_Store(int pid, int va, int value_in){
 	}	
 
 	if(!PT_CheckPresent(pid, VPN(va))){
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		int frameEvicted = PT_Evict(0,1,0); // should check if a frame is free first
 		PT_BringFromDisk(pid, VPN(va), frameEvicted,0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
@@ -142,13 +144,13 @@ int Instruction_Load(int pid, int va){
 		printf("Error: The virtual address %d is not valid.\n\n", va);
 		return 1;
 	}
-	if(!checkVPNcreated(pid, VPN(va))){
+	if(!checkVPNcreated(pid, VPN(va))&&PT_PageTableInMem(pid)){
 		printf("Error: The virtual page %d has not been created.\n\n", VPN(va));
 		return 1;
 	}
 	if(!PT_PageTableInMem(pid)){
 		printf("Error: Page table for pid %d not in memory.\n\n", pid);
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		int frameEvicted = PT_Evict(0,0,1); // should check if a frame is free first
 		PT_BringFromDisk(pid, VPN(va), frameEvicted,1);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
@@ -157,7 +159,7 @@ int Instruction_Load(int pid, int va){
 			PT_UpdatePhysicalAddress(pid,VPN(va), last_SwapSlot());
 		}
 		if(!PT_CheckPresent(pid, VPN(va))){
-			int frameEvicted = PT_Evict(); // check if page table is in memory
+			int frameEvicted = PT_Evict(0,0,1); // check if page
 			PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
 			int offset = va % PAGE_SIZE;
 			pa = PT_VPNtoPA(pid, VPN(va)) + offset;
@@ -172,7 +174,7 @@ int Instruction_Load(int pid, int va){
 
 
 	if(!PT_CheckPresent(pid, VPN(va))){
-		int frameEvicted = PT_Evict(); // should check if a frame is free first
+		int frameEvicted = PT_Evict(0,0,1); // should check if a frame is free first
 		PT_BringFromDisk(pid, VPN(va), frameEvicted, 0);
 		int offset = va % PAGE_SIZE;
 		pa = PT_VPNtoPA(pid, VPN(va)) + offset;
